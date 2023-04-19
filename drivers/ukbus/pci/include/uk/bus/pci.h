@@ -247,9 +247,16 @@ static struct pci_bus_handler ph __unused;
 #define PCI_CONF_IRQ_SHFT           (0x0)
 #define PCI_CONF_IRQ_MASK           (0XFF)
 
+#define PCI_CONF_BAR_TYPE_IO        (0x1)
+
 #define PCI_CONF_IOBAR              (0x10)
 #define PCI_CONF_IOBAR_SHFT         (0x0)
 #define PCI_CONF_IOBAR_MASK         (~0x3)
+
+#define PCI_CONF_MEMBAR_MASK        (~0xf)
+#define PCI_CONF_MEMBAR_1M          (0x2)
+#define PCI_CONF_MEMBAR_64          (0x4)
+#define PCI_CONF_MEMBAR_PREFETCH    (0x8)
 
 #define PCI_BASE_ADDRESS_0	0x10	/* 32 bits */
 #define PCI_BASE_ADDRESS_1	0x14	/* 32 bits */
@@ -277,7 +284,8 @@ static struct pci_bus_handler ph __unused;
 #define PCI_HEADER_MULTI_FUNC   0x80
 #define PCI_BAR0_ADDR        0x10
 #define PCI_CONFIG_SECONDARY_BUS   0x19
-#define PCI_CAPABILITIES_PTR   0x34
+#define PCI_CAPABILITIES_PTR      (0x34)
+#define PCI_CAPABILITIES_PTR_MASK (~0x3)
 
 #define PCI_COMMAND		0x04	/* 16 bits */
 #define  PCI_COMMAND_IO		0x1	/* Enable response in I/O space */
