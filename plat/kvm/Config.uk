@@ -178,6 +178,11 @@ config RTC_PL031
        default y if ARCH_ARM_64
        depends on ARCH_ARM_64
 
+config QEMU_IVSHMEM
+       bool "QEMU Inter-VM Shared Memory device driver"
+       default n
+       select KVM_PCI
+
 config LIBOFW
        bool "Open Firmware library support"
        default n

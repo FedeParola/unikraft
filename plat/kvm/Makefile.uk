@@ -16,6 +16,7 @@ $(eval $(call addplatlib_s,kvm,libkvmvirtio9p,$(CONFIG_VIRTIO_9P)))
 $(eval $(call addplatlib_s,kvm,libkvmofw,$(CONFIG_LIBOFW)))
 $(eval $(call addplatlib_s,kvm,libkvmgic,$(CONFIG_LIBGIC)))
 $(eval $(call addplatlib_s,kvm,libkvmpl031,$(CONFIG_RTC_PL031)))
+$(eval $(call addplatlib_s,kvm,libkvmqemuivshmem,$(CONFIG_QEMU_IVSHMEM)))
 
 ##
 ## Platform library definitions
@@ -243,3 +244,10 @@ LIBKVMPL031_CINCLUDES-y		+= -I$(UK_PLAT_DRIVERS_BASE)/include
 
 LIBKVMPL031_SRCS-y		+= $(UK_PLAT_DRIVERS_BASE)/rtc/pl031.c
 LIBKVMPL031_SRCS-y		+= $(UK_PLAT_DRIVERS_BASE)/rtc/rtc.c
+
+##
+## QEMU ivshmem library definitions
+##
+LIBKVMQEMUIVSHMEM_CINCLUDES-y		+= -I$(UK_PLAT_COMMON_BASE)/include
+
+LIBKVMQEMUIVSHMEM_SRCS-y		+= $(UK_PLAT_DRIVERS_BASE)/qemu/ivshmem.c
