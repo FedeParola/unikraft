@@ -21,3 +21,9 @@ menu "Xen"
 source "$(shell,$(UK_BASE)/support/build/config-submenu.sh -q -o '$(KCONFIG_DIR)/drivers-xen.uk' -r '$(KCONFIG_DRIV_BASE)/xen' -l '$(KCONFIG_DRIV_BASE)/xen' -e '$(KCONFIG_EXCLUDEDIRS)')"
 
 endmenu
+
+menu "QEMU"
+
+source "$(shell,$(UK_BASE)/support/build/config-submenu.sh -q -o '$(KCONFIG_DIR)/drivers-qemu.uk' -r '$(KCONFIG_DRIV_BASE)/qemu' -l '$(KCONFIG_DRIV_BASE)/qemu' -e '$(KCONFIG_EXCLUDEDIRS)')"
+
+endmenu

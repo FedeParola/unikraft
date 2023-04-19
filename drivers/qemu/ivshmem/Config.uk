@@ -1,0 +1,5 @@
+config LIBQEMU_IVSHMEM
+       bool "QEMU Inter-VM Shared Memory device driver"
+       depends on KVM_VMM_QEMU
+       default n
+       select LIBUKBUS_PCI

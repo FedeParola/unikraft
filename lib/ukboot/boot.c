@@ -188,6 +188,13 @@ static struct uk_alloc *heap_init()
 #else /* CONFIG_LIBUKVMEM */
 	free_pages  = pt->fa->free_memory >> PAGE_SHIFT;
 	alloc_pages = free_pages - PT_PAGES(free_pages);
+#ifdef CONFIG_LIBQEMU_IVSHMEM
+	/* Leave some frames out to allocate page tables to map the ivshmem
+	 * shared memory. We account for a max of 512K pages of shared memory.
+	 * TODO: is there a better way to handle this? Maybe through VMAs?
+	 */
+	alloc_pages -= PT_PAGES(512 * 1024);
+#endif
 
 	rc = ukplat_page_map(pt, heap_base, __PADDR_ANY,
 			     alloc_pages, PAGE_ATTR_PROT_RW, 0);

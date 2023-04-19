@@ -1,0 +1,10 @@
+$(eval $(call addlib_s,libqemu_ivshmem,$(CONFIG_LIBQEMU_IVSHMEM)))
+
+CINCLUDES-$(CONFIG_LIBQEMU_IVSHMEM)   += -I$(LIBQEMU_IVSHMEM_BASE)/include
+CXXINCLUDES-$(CONFIG_LIBQEMU_IVSHMEM) += -I$(LIBQEMU_IVSHMEM_BASE)/include
+
+# TODO Remove as soon as plat dependencies go away
+LIBQEMU_IVSHMEM_CINCLUDES-y += -I$(UK_PLAT_COMMON_BASE)/include
+
+LIBQEMU_IVSHMEM_CINCLUDES-y  += -I$(LIBQEMU_IVSHMEM_BASE)/include
+LIBQEMU_IVSHMEM_SRCS-y += $(LIBQEMU_IVSHMEM_BASE)/qemu_ivshmem.c
