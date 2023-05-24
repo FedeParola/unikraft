@@ -229,6 +229,16 @@ static inline int ukarch_vaddr_range_isvalid(__vaddr_t start, __vaddr_t end)
 
 #ifndef CONFIG_PARAVIRT
 #ifndef __ASSEMBLY__
+
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+#include <h2os/api.h>
+
+H2OS_API_DEFINE(ukarch_pte_read, __vaddr_t, pt_vaddr, unsigned int, lvl,
+		unsigned int, idx, __pte_t *, pte)
+H2OS_API_DEFINE(ukarch_pte_write, __vaddr_t, pt_vaddr, unsigned int, lvl,
+		unsigned int, idx, __pte_t, pte)
+
+#else /* !CONFIG_LIBH2OS_MEMORY_PROTECTION */
 static inline int ukarch_pte_read(__vaddr_t pt_vaddr, unsigned int lvl,
 				  unsigned int idx, __pte_t *pte)
 {
@@ -256,6 +266,7 @@ static inline int ukarch_pte_write(__vaddr_t pt_vaddr, unsigned int lvl,
 
 	return 0;
 }
+#endif /* CONFIG_LIBH2OS_MEMORY_PROTECTION */
 
 static inline __paddr_t ukarch_pt_read_base(void)
 {

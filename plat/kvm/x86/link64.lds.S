@@ -53,6 +53,13 @@ SECTIONS
 		*(.text)
 		*(.text.*)
 	} :text
+
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+	.text_h2os ALIGN(__PAGE_SIZE) :
+	{
+		*(.text_h2os)
+	}
+#endif
 	_etext = .;
 
 	/* Read-only data */
@@ -63,6 +70,13 @@ SECTIONS
 		*(.rodata)
 		*(.rodata.*)
 	} :rodata
+
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+	.rodata_h2os ALIGN(__PAGE_SIZE) :
+	{
+		*(.rodata_h2os)
+	}
+#endif
 	_erodata = .;
 
 	EXCEPTION_SECTIONS
@@ -94,6 +108,17 @@ SECTIONS
 	TLS_SECTIONS
 
 	DATA_SECTIONS
+
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+	. = ALIGN(__PAGE_SIZE);
+	_idt_h2os_start = .;
+	.idt :
+	{
+		*(.idt)
+	}
+	. = ALIGN(__PAGE_SIZE);
+	_idt_h2os_end = .;
+#endif
 
 	_end = .;
 

@@ -34,8 +34,18 @@
 #include <uk/config.h>
 #include <uk/arch/paging.h>
 
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+/* TODO: for PKUs to work al PTEs in the hierarchy that leads to the page
+ * resolution must be tagged as user pages. At the moment I'm tagging all pages
+ * of the unikernel as user to simplify things. Is there a more granular way to
+ * do so?
+ */
+#define PTE_RO		(X86_PTE_PRESENT | X86_PTE_US)
+#define PTE_RW		(X86_PTE_PRESENT | X86_PTE_RW | X86_PTE_US)
+#else
 #define PTE_RO		X86_PTE_PRESENT
 #define PTE_RW		(X86_PTE_PRESENT | X86_PTE_RW)
+#endif
 
 #define PT_LVL		0
 #define PD_LVL		1
@@ -125,8 +135,29 @@
  * 0xffffff8000000000 - 0xffffffffffffffff Mapping of first 512GB (for PTs)
  */
 .align 0x1000
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+/* We need to retain the fine grained memory mapping that was removed in commit
+ * ad684b5 to be able to set MPK keys on h2os pages
+ */
+x86_bpt_pt0_0_0: /* 4K pages */
+	pte_zero 0x0000000000000000, 0x008
+	pte_fill 0x0000000000008000, 0x001, PT_LVL, PTE_RW
+	pte_fill 0x0000000000009000, 0x008, PT_LVL, PTE_RO
+	pte_zero 0x0000000000010000, 0x0a7
+	pte_fill 0x00000000000b8000, 0x008, PT_LVL, PTE_RW
+	pte_zero 0x00000000000c0000, 0x020
+	pte_fill 0x00000000000e0000, 0x020, PT_LVL, PTE_RO
+	pte_fill 0x0000000000100000, 0x100, PT_LVL, PTE_RW
+
+.align 0x1000
+x86_bpt_pd0_0: /* 2M pages */
+	pte	 x86_bpt_pt0_0_0, PTE_RW
+	pte_fill 0x0000000000200000, 0x1ff, PD_LVL, PTE_RW
+
+#else
 x86_bpt_pd0_0: /* 2M pages */
 	pte_fill 0x0000000000000000, 0x200, PD_LVL, PTE_RW
+#endif
 
 x86_bpt_pd0_1: /* 2M pages */
 	pte_fill 0x0000000040000000, 0x200, PD_LVL, PTE_RW

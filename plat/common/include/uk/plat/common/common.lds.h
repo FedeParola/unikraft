@@ -162,6 +162,45 @@
 	 */								\
 	_tls_end = . + SIZEOF(.tbss);
 
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+#define DATA_SECTIONS							\
+	/* Read-write data (initialized) */				\
+	. = ALIGN(__PAGE_SIZE);						\
+	_data = .;							\
+	.data :								\
+	{								\
+		*(.data)						\
+		*(.data.*)						\
+	} :data								\
+									\
+	.data_h2os ALIGN(__PAGE_SIZE) :					\
+	{								\
+		*(.data_h2os)						\
+	}								\
+	_edata = .;							\
+									\
+	/*								\
+	 * NOTE: linker will insert any extra sections here,		\
+	 * just before .bss						\
+	 */								\
+									\
+	/* Read-write data (uninitialized) */				\
+	. = ALIGN(__PAGE_SIZE);						\
+	__bss_start = .;						\
+	.bss :								\
+	{								\
+		*(.bss)							\
+		*(.bss.*)						\
+		*(COMMON)						\
+		. = ALIGN(__PAGE_SIZE);					\
+	}								\
+									\
+	.bss_h2os ALIGN(__PAGE_SIZE) :					\
+	{								\
+		*(.bss_h2os)						\
+	}
+
+#else /* !CONFIG_LIBH2OS_MEMORY_PROTECTION */
 #define DATA_SECTIONS							\
 	/* Read-write data (initialized) */				\
 	. = ALIGN(__PAGE_SIZE);						\
@@ -188,5 +227,6 @@
 		*(COMMON)						\
 		. = ALIGN(__PAGE_SIZE);					\
 	}
+#endif /* CONFIG_LIBH2OS_MEMORY_PROTECTION */
 
 #endif /* __UK_COMMON_LDS_H */
