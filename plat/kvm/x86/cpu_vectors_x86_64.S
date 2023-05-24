@@ -31,6 +31,83 @@
 
 .altmacro
 
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+#include <uk/plat/common/lcpu.h>
+#define MPK_ACCESS_DISABLE 0x1
+#define MPK_WRITE_DISABLE  0x2
+#define UNIMSG_DEFAULT_KEY 0x0UL
+#define UNIMSG_WRITE_KEY 0x2UL
+#define UNIMSG_ACCESS_KEY 0x1UL
+#define UNIMSG_PKRU_DEFAULT						\
+	((MPK_ACCESS_DISABLE << (2 * UNIMSG_ACCESS_KEY))		\
+	 | (MPK_WRITE_DISABLE << (2 * UNIMSG_WRITE_KEY)))
+#define UNIMSG_PKRU_PRIVILEGED 0
+
+.extern unimsg_irq_ret_info
+
+/* TODO: can all of this safely be moved to C code? E.g., in
+ * _ukplat_irq_handle() for interrupts
+ */
+
+.macro UNIMSG_INTR_ENTRY id
+	/* Did we interrupt privileged code? */
+	xor %rdx, %rdx
+	xor %rcx, %rcx
+	rdpkru
+	cmp $UNIMSG_PKRU_DEFAULT, %rax
+	je skip\id
+	/* Store interrupt return info for the current cpu */
+	movl %gs:LCPU_IDX_OFFSET, %ecx /* Idx of the current cpu in rcx */
+	/* The size of each ret_info element is 24B */
+	lea (%ecx, %ecx, 2), %rcx /* Idx * 3 */
+	lea unimsg_irq_ret_info(%rip), %rdi
+	/* Store privileged flag */
+	movb $1, 0x10(%rdi, %rcx, 8)
+	/* Store return rip */
+	mov 0x88(%rsp), %rax
+	mov %rax, 0x0(%rdi, %rcx, 8)
+	/* Store return rsp */
+	mov 0xa0(%rsp), %rax
+	mov %rax, 0x8(%rdi, %rcx, 8)
+	/* Set unprivileged PKRU */
+	xor %rdx, %rdx
+	xor %rcx, %rcx
+	mov $UNIMSG_PKRU_DEFAULT, %rax
+	wrpkru
+	cmp $UNIMSG_PKRU_DEFAULT, %rax
+	je skip\id
+	int $0xd /* ROP detected, crash */
+skip\id:
+.endm
+
+.macro UNIMSG_INTR_EXIT id
+	/* Did we interrupt privileged code? */
+	movl %gs:LCPU_IDX_OFFSET, %ecx /* Idx of the current cpu in rcx */
+	/* The size of each ret_info element is 24B */
+	lea (%ecx, %ecx, 2), %rbx /* Idx * 3 */
+	lea unimsg_irq_ret_info(%rip), %rdi
+	cmpb $1, 0x10(%rdi, %rbx, 8)
+	jne sskip\id
+	/* Restore privileged PKRU */
+	xor %rdx, %rdx
+	xor %rcx, %rcx
+	mov $UNIMSG_PKRU_PRIVILEGED, %rax
+	wrpkru
+	/* Reset flag for next interrupt */
+	movb $0, 0x10(%rdi, %rbx, 8)
+	/* Check return rip and rsp, this should also protect form ROP */
+	mov 0x88(%rsp), %rax /* rip */
+	cmp %rax, 0x0(%rdi, %rbx, 8)
+	jne err\id
+	mov 0xa0(%rsp), %rax /* rsp */
+	cmp %rax, 0x8(%rdi, %rbx, 8)
+	je sskip\id
+err\id:
+	int $0xd
+sskip\id:
+.endm
+#endif
+
 #define ENTRY(X)     .global X ; .type X, @function ; X:
 
 .macro PUSH_CALLER_SAVE
@@ -104,9 +181,17 @@ ENTRY(ASM_TRAP_SYM(\trapname))
 	subq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
 	.cfi_adjust_cfa_offset __REGS_PAD_SIZE
 
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	UNIMSG_INTR_ENTRY \trapname
+#endif
+
 	movq %rsp, %rdi
 	movq __REGS_OFFSETOF_ORIG_RAX(%rsp), %rsi
 	call do_\trapname
+
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	UNIMSG_INTR_EXIT \trapname
+#endif
 
 	addq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
 	.cfi_adjust_cfa_offset -__REGS_PAD_SIZE
@@ -145,9 +230,17 @@ ENTRY(cpu_irq_\irqno)
 	subq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
 	.cfi_adjust_cfa_offset __REGS_PAD_SIZE
 
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	UNIMSG_INTR_ENTRY \irqno
+#endif
+
 	movq %rsp, %rdi
 	movq $\irqno, %rsi
 	call uk_intctlr_xpic_handle_irq
+
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	UNIMSG_INTR_EXIT \irqno
+#endif
 
 	addq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
 	.cfi_adjust_cfa_offset -__REGS_PAD_SIZE

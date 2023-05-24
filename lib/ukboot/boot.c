@@ -196,8 +196,19 @@ static struct uk_alloc *heap_init()
 	alloc_pages -= PT_PAGES(512 * 1024);
 #endif
 
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	/* Need to force allocation of small pages to be able to set MPK keys of
+	 * unimsg heap with max granularity.
+	 * TODO: maybe we can achieve the same by allocating unimsg heap with
+	 * alignment 
+	 */
+	rc = ukplat_page_map(pt, heap_base, __PADDR_ANY, alloc_pages,
+			     PAGE_ATTR_PROT_RW,
+			     PAGE_FLAG_SIZE(PAGE_LEVEL) | PAGE_FLAG_FORCE_SIZE);
+#else
 	rc = ukplat_page_map(pt, heap_base, __PADDR_ANY,
 			     alloc_pages, PAGE_ATTR_PROT_RW, 0);
+#endif
 	if (unlikely(rc))
 		return NULL;
 

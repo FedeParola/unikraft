@@ -55,6 +55,13 @@ SECTIONS
 		*(.text)
 		*(.text.*)
 	} :text
+
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	.text_unimsg ALIGN(__PAGE_SIZE) :
+	{
+		*(.text_unimsg)
+	}
+#endif
 	_etext = .;
 
 	/* Read-only data */
@@ -65,6 +72,13 @@ SECTIONS
 		*(.rodata)
 		*(.rodata.*)
 	} :rodata
+
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	.rodata_unimsg ALIGN(__PAGE_SIZE) :
+	{
+		*(.rodata_unimsg)
+	}
+#endif
 	_erodata = .;
 
 	EXCEPTION_SECTIONS
@@ -96,6 +110,17 @@ SECTIONS
 	TLS_SECTIONS
 
 	DATA_SECTIONS
+
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	. = ALIGN(__PAGE_SIZE);
+	_interrupt_unimsg_start = .;
+	.interrupt_unimsg :
+	{
+		*(.interrupt_unimsg)
+	}
+	. = ALIGN(__PAGE_SIZE);
+	_interrupt_unimsg_end = .;
+#endif
 
 	_end = .;
 
