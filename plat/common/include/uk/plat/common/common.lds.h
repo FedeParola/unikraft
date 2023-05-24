@@ -162,6 +162,45 @@
 	 */								\
 	_tls_end = . + SIZEOF(.tbss);
 
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+#define DATA_SECTIONS							\
+	/* Read-write data (initialized) */				\
+	. = ALIGN(__PAGE_SIZE);						\
+	_data = .;							\
+	.data :								\
+	{								\
+		*(.data)						\
+		*(.data.*)						\
+	} :data								\
+									\
+	.data_unimsg ALIGN(__PAGE_SIZE) :				\
+	{								\
+		*(.data_unimsg)						\
+	}								\
+	_edata = .;							\
+									\
+	/*								\
+	 * NOTE: linker will insert any extra sections here,		\
+	 * just before .bss						\
+	 */								\
+									\
+	/* Read-write data (uninitialized) */				\
+	. = ALIGN(__PAGE_SIZE);						\
+	__bss_start = .;						\
+	.bss :								\
+	{								\
+		*(.bss)							\
+		*(.bss.*)						\
+		*(COMMON)						\
+		. = ALIGN(__PAGE_SIZE);					\
+	}								\
+									\
+	.bss_unimsg ALIGN(__PAGE_SIZE) :				\
+	{								\
+		*(.bss_unimsg)						\
+	}
+
+#else /* !CONFIG_LIBUNIMSG_MEMORY_PROTECTION */
 #define DATA_SECTIONS							\
 	/* Read-write data (initialized) */				\
 	. = ALIGN(__PAGE_SIZE);						\
@@ -188,6 +227,7 @@
 		*(COMMON)						\
 		. = ALIGN(__PAGE_SIZE);					\
 	}
+#endif /* CONFIG_LIBUNIMSG_MEMORY_PROTECTION */
 
 #define DISCARDS							\
 	/DISCARD/ :							\

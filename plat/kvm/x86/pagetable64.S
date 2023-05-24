@@ -35,8 +35,18 @@
 #include <uk/arch/paging.h>
 #include <uk/reloc.h>
 
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+/* TODO: for PKUs to work al PTEs in the hierarchy that leads to the page
+ * resolution must be tagged as user pages. At the moment I'm tagging all pages
+ * of the unikernel as user to simplify things. Is there a more granular way to
+ * do so?
+ */
+#define PTE_RO		(X86_PTE_PRESENT | X86_PTE_US)
+#define PTE_RW		(X86_PTE_PRESENT | X86_PTE_RW | X86_PTE_US)
+#else
 #define PTE_RO		X86_PTE_PRESENT
 #define PTE_RW		(X86_PTE_PRESENT | X86_PTE_RW)
+#endif
 
 #define PT_LVL		0
 #define PD_LVL		1

@@ -49,6 +49,12 @@
 #error CONFIG_LIBUKSCHED_TCB_INIT requires that a TLS contains reserved space for a TCB
 #endif
 
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+#include <unimsg/api.h>
+UNIMSG_API_DEFINE(unimsg_thread_register, struct uk_thread *, t)
+UNIMSG_API_DEFINE(unimsg_thread_release, struct uk_thread *, t)
+#endif
+
 extern const struct uk_thread_inittab_entry _uk_thread_inittab_start[];
 extern const struct uk_thread_inittab_entry _uk_thread_inittab_end;
 
@@ -273,8 +279,14 @@ int uk_thread_init_bare(struct uk_thread *t,
 	_uk_thread_struct_init(t, tlsp, is_uktls, ectx, name, priv, dtor);
 	ukarch_ctx_init_bare(&t->ctx, sp, ip);
 
-	if (ip)
+	if (ip) {
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+		int ret = unimsg_thread_register(t);
+		if (ret)
+			return ret;
+#endif
 		uk_thread_set_runnable(t);
+	}
 
 	return _uk_thread_call_inittab(t);
 }
@@ -297,6 +309,11 @@ int uk_thread_init_bare_fn0(struct uk_thread *t,
 	_uk_thread_struct_init(t, tlsp, is_uktls, ectx, name, priv, dtor);
 	ukarch_ctx_init_entry0(&t->ctx, sp, 0,
 			       (ukarch_ctx_entry0) fn);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	int ret = unimsg_thread_register(t);
+	if (ret)
+		return ret;
+#endif
 	uk_thread_set_runnable(t);
 
 	return _uk_thread_call_inittab(t);
@@ -322,6 +339,11 @@ int uk_thread_init_bare_fn1(struct uk_thread *t,
 	ukarch_ctx_init_entry1(&t->ctx, sp, 0,
 			       (ukarch_ctx_entry1) fn,
 			       (long) argp);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	int ret = unimsg_thread_register(t);
+	if (ret)
+		return ret;
+#endif
 	uk_thread_set_runnable(t);
 
 	return _uk_thread_call_inittab(t);
@@ -347,6 +369,11 @@ int uk_thread_init_bare_fn2(struct uk_thread *t,
 	ukarch_ctx_init_entry2(&t->ctx, sp, 0,
 			       (ukarch_ctx_entry2) fn,
 			       (long) argp0, (long) argp1);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	int ret = unimsg_thread_register(t);
+	if (ret)
+		return ret;
+#endif
 	uk_thread_set_runnable(t);
 
 	return _uk_thread_call_inittab(t);
@@ -491,6 +518,11 @@ int uk_thread_init_fn0(struct uk_thread *t,
 	ukarch_ctx_init_entry0(&t->ctx,
 			       ukarch_gen_sp(t->_mem.stack, stack_len),
 			       0, (ukarch_ctx_entry0) fn);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	ret = unimsg_thread_register(t);
+	if (ret)
+		goto err_free_alloc;
+#endif
 	uk_thread_set_runnable(t);
 
 	ret = _uk_thread_call_inittab(t);
@@ -531,6 +563,11 @@ int uk_thread_init_fn1(struct uk_thread *t,
 	ukarch_ctx_init_entry1(&t->ctx,
 			       ukarch_gen_sp(t->_mem.stack, stack_len),
 			       0, (ukarch_ctx_entry1) fn, (long) argp);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	ret = unimsg_thread_register(t);
+	if (ret)
+		goto err_free_alloc;
+#endif
 	uk_thread_set_runnable(t);
 
 	ret = _uk_thread_call_inittab(t);
@@ -572,6 +609,11 @@ int uk_thread_init_fn2(struct uk_thread *t,
 			       ukarch_gen_sp(t->_mem.stack, stack_len),
 			       0, (ukarch_ctx_entry2) fn,
 			       (long) argp0, (long) argp1);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	ret = unimsg_thread_register(t);
+	if (ret)
+		goto err_free_alloc;
+#endif
 	uk_thread_set_runnable(t);
 
 	ret = _uk_thread_call_inittab(t);
@@ -750,6 +792,11 @@ void uk_thread_container_init_bare(struct uk_thread *t,
 	UK_ASSERT(!(t->flags & UK_THREADF_RUNNABLE));
 
 	ukarch_ctx_init_bare(&t->ctx, t->ctx.sp, ip);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	int ret = unimsg_thread_register(t);
+	if (ret)
+		UK_CRASH("Unable to register thread in unimsg\n");
+#endif
 	uk_thread_set_runnable(t);
 }
 
@@ -763,6 +810,11 @@ void uk_thread_container_init_fn0(struct uk_thread *t,
 
 	ukarch_ctx_init_entry0(&t->ctx, t->ctx.sp, 0,
 			       (ukarch_ctx_entry0) fn);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	int ret = unimsg_thread_register(t);
+	if (ret)
+		UK_CRASH("Unable to register thread in unimsg\n");
+#endif
 	uk_thread_set_runnable(t);
 }
 
@@ -777,6 +829,11 @@ void uk_thread_container_init_fn1(struct uk_thread *t,
 
 	ukarch_ctx_init_entry1(&t->ctx, t->ctx.sp, 0,
 			       (ukarch_ctx_entry1) fn, (long) argp);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	int ret = unimsg_thread_register(t);
+	if (ret)
+		UK_CRASH("Unable to register thread in unimsg\n");
+#endif
 	uk_thread_set_runnable(t);
 }
 
@@ -792,6 +849,11 @@ void uk_thread_container_init_fn2(struct uk_thread *t,
 	ukarch_ctx_init_entry2(&t->ctx, t->ctx.sp, 0,
 			       (ukarch_ctx_entry2) fn,
 			       (long) argp0, (long) argp1);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	int ret = unimsg_thread_register(t);
+	if (ret)
+		UK_CRASH("Unable to register thread in unimsg\n");
+#endif
 	uk_thread_set_runnable(t);
 }
 
@@ -920,6 +982,13 @@ void uk_thread_release(struct uk_thread *t)
 		uk_free(tls_a,   tls);
 	if (stack_a && stack)
 		uk_free(stack_a, stack);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	/* TODO: release can be called also on threads that were never
+	 * registered in unimsg (e.g., because something went wrong in the
+	 * creation procedure). What happens if there's garabage in t->unimsg_id
+	 * and that garbage happens to match the id of another thread? */
+	unimsg_thread_release(t);
+#endif
 	if (a)
 		uk_free(a, t);
 }
