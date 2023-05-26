@@ -27,6 +27,20 @@
 #include <x86/traps.h>
 #include <uk/asm/cfi.h>
 
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+#define MPK_ACCESS_DISABLE 0x1
+#define MPK_WRITE_DISABLE  0x2
+#define H2OS_DEFAULT_KEY 0x0UL
+#define H2OS_WRITE_KEY 0x2UL
+#define H2OS_ACCESS_KEY 0x1UL
+#define H2OS_PKRU_DEFAULT						\
+	((MPK_ACCESS_DISABLE << (2 * H2OS_ACCESS_KEY))			\
+	 | (MPK_WRITE_DISABLE << (2 * H2OS_WRITE_KEY)))
+#define H2OS_PKRU_PRIVILEGED 0
+
+.extern h2os_intr_privileged
+#endif
+
 #define ENTRY(X)     .global X ; .type X, @function ; X:
 
 .macro PUSH_CALLER_SAVE
@@ -100,9 +114,40 @@ ENTRY(ASM_TRAP_SYM(\trapname))
 	subq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
 	.cfi_adjust_cfa_offset __REGS_PAD_SIZE
 
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+	/* Did we interrupt privileged code?
+	 * TODO: store in a per-cpu variable
+	 */
+	xor %rdx, %rdx
+	xor %rcx, %rcx
+	rdpkru
+	cmp $H2OS_PKRU_DEFAULT, %rax
+	je skip\trapname
+	movb $1, h2os_intr_privileged(%rip)
+	/* Set unprivileged PKRU */
+	mov $H2OS_PKRU_DEFAULT, %rax
+	wrpkru
+skip\trapname:
+#endif
+
 	movq %rsp, %rdi
 	movq __REGS_OFFSETOF_ORIG_RAX(%rsp), %rsi
 	call do_\trapname
+
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+	/* Did we interrupt privileged code? */
+	cmpb $1, h2os_intr_privileged(%rip)
+	jne sskip\trapname
+	/* Restore privileged PKRU */
+	xor %rdx, %rdx
+	xor %rcx, %rcx
+	mov $H2OS_PKRU_PRIVILEGED, %rax
+	/* TODO: is this subject to ROP? */
+	wrpkru
+	/* Reset flag for next interrupt */
+	movb $0, h2os_intr_privileged(%rip)
+sskip\trapname:
+#endif
 
 	addq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
 	.cfi_adjust_cfa_offset -__REGS_PAD_SIZE
@@ -141,9 +186,40 @@ ENTRY(cpu_irq_\irqno)
 	subq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
 	.cfi_adjust_cfa_offset __REGS_PAD_SIZE
 
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+	/* Did we interrupt privileged code?
+	 * TODO: store in a per-cpu variable
+	 */
+	xor %rdx, %rdx
+	xor %rcx, %rcx
+	rdpkru
+	cmp $H2OS_PKRU_DEFAULT, %rax
+	je skip\irqno
+	movb $1, h2os_intr_privileged(%rip)
+	/* Set unprivileged PKRU */
+	mov $H2OS_PKRU_DEFAULT, %rax
+	wrpkru
+skip\irqno:
+#endif
+
 	movq %rsp, %rdi
 	movq $\irqno, %rsi
 	call _ukplat_irq_handle
+
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+	/* Did we interrupt privileged code? */
+	cmpb $1, h2os_intr_privileged(%rip)
+	jne sskip\irqno
+	/* Restore privileged PKRU */
+	xor %rdx, %rdx
+	xor %rcx, %rcx
+	mov $H2OS_PKRU_PRIVILEGED, %rax
+	/* TODO: is this subject to ROP? */
+	wrpkru
+	/* Reset flag for next interrupt */
+	movb $0, h2os_intr_privileged(%rip)
+sskip\irqno:
+#endif
 
 	addq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
 	.cfi_adjust_cfa_offset -__REGS_PAD_SIZE

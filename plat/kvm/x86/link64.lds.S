@@ -111,13 +111,13 @@ SECTIONS
 
 #ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
 	. = ALIGN(__PAGE_SIZE);
-	_idt_h2os_start = .;
-	.idt :
+	_interrupt_h2os_start = .;
+	.interrupt_h2os :
 	{
-		*(.idt)
+		*(.interrupt_h2os)
 	}
 	. = ALIGN(__PAGE_SIZE);
-	_idt_h2os_end = .;
+	_interrupt_h2os_end = .;
 #endif
 
 	_end = .;
