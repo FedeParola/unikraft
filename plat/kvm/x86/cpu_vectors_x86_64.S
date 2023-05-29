@@ -38,7 +38,69 @@
 	 | (MPK_WRITE_DISABLE << (2 * H2OS_WRITE_KEY)))
 #define H2OS_PKRU_PRIVILEGED 0
 
-.extern h2os_intr_privileged
+.extern h2os_irq_ret_info
+
+/* TODO: can all of this safely be moved to C code? E.g., in
+ * _ukplat_irq_handle() for interrupts
+ */
+
+.macro H2OS_INTR_ENTRY id
+	/* Did we interrupt privileged code? */
+	xor %rdx, %rdx
+	xor %rcx, %rcx
+	rdpkru
+	cmp $H2OS_PKRU_DEFAULT, %rax
+	je skip\id
+	/* Store interrupt return info for the current cpu */
+	mov $1, %eax
+	cpuid
+	shr $24, %ebx /* Id of the current cpu */
+	lea h2os_irq_ret_info(%rip), %rdi
+	/* Store privileged flag */
+	movb $1, 0x10(%rdi, %rbx, 1)
+	/* Store return rip */
+	mov 0x88(%rsp), %rax
+	mov %rax, 0x0(%rdi, %rbx, 1)
+	/* Store return rsp */
+	mov 0xa0(%rsp), %rax
+	mov %rax, 0x8(%rdi, %rbx, 1)
+	/* Set unprivileged PKRU */
+	xor %rdx, %rdx
+	xor %rcx, %rcx
+	mov $H2OS_PKRU_DEFAULT, %rax
+	wrpkru
+	cmp $H2OS_PKRU_DEFAULT, %rax
+	je skip\id
+	int $0xd /* ROP detected, crash */
+skip\id:
+.endm
+
+.macro H2OS_INTR_EXIT id
+	/* Did we interrupt privileged code? */
+	mov $1, %eax
+	cpuid
+	shr $24, %ebx /* Id of the current cpu */
+	lea h2os_irq_ret_info(%rip), %rdi
+	cmpb $1, 0x10(%rdi, %rbx, 1)
+	jne sskip\id
+	/* Restore privileged PKRU */
+	xor %rdx, %rdx
+	xor %rcx, %rcx
+	mov $H2OS_PKRU_PRIVILEGED, %rax
+	wrpkru
+	/* Reset flag for next interrupt */
+	movb $0, 0x10(%rdi, %rbx, 1)
+	/* Check return rip and rsp, this should also protect form ROP */
+	mov 0x88(%rsp), %rax /* rip */
+	cmp %rax, 0x0(%rdi, %rbx, 1)
+	jne err\id
+	mov 0xa0(%rsp), %rax /* rsp */
+	cmp %rax, 0x8(%rdi, %rbx, 1)
+	je sskip\id
+err\id:
+	int $0xd
+sskip\id:
+.endm
 #endif
 
 #define ENTRY(X)     .global X ; .type X, @function ; X:
@@ -115,19 +177,7 @@ ENTRY(ASM_TRAP_SYM(\trapname))
 	.cfi_adjust_cfa_offset __REGS_PAD_SIZE
 
 #ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-	/* Did we interrupt privileged code?
-	 * TODO: store in a per-cpu variable
-	 */
-	xor %rdx, %rdx
-	xor %rcx, %rcx
-	rdpkru
-	cmp $H2OS_PKRU_DEFAULT, %rax
-	je skip\trapname
-	movb $1, h2os_intr_privileged(%rip)
-	/* Set unprivileged PKRU */
-	mov $H2OS_PKRU_DEFAULT, %rax
-	wrpkru
-skip\trapname:
+	H2OS_INTR_ENTRY \trapname
 #endif
 
 	movq %rsp, %rdi
@@ -135,18 +185,7 @@ skip\trapname:
 	call do_\trapname
 
 #ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-	/* Did we interrupt privileged code? */
-	cmpb $1, h2os_intr_privileged(%rip)
-	jne sskip\trapname
-	/* Restore privileged PKRU */
-	xor %rdx, %rdx
-	xor %rcx, %rcx
-	mov $H2OS_PKRU_PRIVILEGED, %rax
-	/* TODO: is this subject to ROP? */
-	wrpkru
-	/* Reset flag for next interrupt */
-	movb $0, h2os_intr_privileged(%rip)
-sskip\trapname:
+	H2OS_INTR_EXIT \trapname
 #endif
 
 	addq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
@@ -187,19 +226,7 @@ ENTRY(cpu_irq_\irqno)
 	.cfi_adjust_cfa_offset __REGS_PAD_SIZE
 
 #ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-	/* Did we interrupt privileged code?
-	 * TODO: store in a per-cpu variable
-	 */
-	xor %rdx, %rdx
-	xor %rcx, %rcx
-	rdpkru
-	cmp $H2OS_PKRU_DEFAULT, %rax
-	je skip\irqno
-	movb $1, h2os_intr_privileged(%rip)
-	/* Set unprivileged PKRU */
-	mov $H2OS_PKRU_DEFAULT, %rax
-	wrpkru
-skip\irqno:
+	H2OS_INTR_ENTRY \irqno
 #endif
 
 	movq %rsp, %rdi
@@ -207,18 +234,7 @@ skip\irqno:
 	call _ukplat_irq_handle
 
 #ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-	/* Did we interrupt privileged code? */
-	cmpb $1, h2os_intr_privileged(%rip)
-	jne sskip\irqno
-	/* Restore privileged PKRU */
-	xor %rdx, %rdx
-	xor %rcx, %rcx
-	mov $H2OS_PKRU_PRIVILEGED, %rax
-	/* TODO: is this subject to ROP? */
-	wrpkru
-	/* Reset flag for next interrupt */
-	movb $0, h2os_intr_privileged(%rip)
-sskip\irqno:
+	H2OS_INTR_EXIT \irqno
 #endif
 
 	addq $__REGS_PAD_SIZE, %rsp         /* we have some padding */

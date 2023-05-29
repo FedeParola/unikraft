@@ -143,7 +143,7 @@ DECLARE_TRAP_EC(virt_error,    "virtualization error", NULL)
 
 #ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
 /* Put the IDT in a dedicated section so we can protect it with MPK */
-__section(".h2os_interrupts")
+__section(".interrupt_h2os")
 #endif
 static struct seg_gate_desc64 cpu_idt[IDT_NUM_ENTRIES] __align(8);
 static struct desc_table_ptr64 idtptr;
