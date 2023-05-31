@@ -57,6 +57,9 @@ typedef void (*uk_thread_fn2_t)(void *, void *) __noreturn;
 struct uk_thread {
 	struct ukarch_ctx    ctx;	/**< Architecture context */
 	struct ukarch_ectx *ectx;	/**< Extended context (FPU, VPU, ...) */
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+	unsigned long h2os_id;
+#endif
 	uintptr_t           tlsp;	/**< Current active TLS pointer */
 	__uptr            uktlsp;	/**< Unikraft TLS pointer */
 

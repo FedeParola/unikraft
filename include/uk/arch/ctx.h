@@ -174,6 +174,33 @@ void ukarch_ctx_init_entry2(struct ukarch_ctx *ctx,
 	})
 
 /**
+ * State of extended context, like additional CPU registers and units
+ * (e.g., floating point, vector registers)
+ * Note: The layout is architecture specific. The helpers `ukarch_ectx_size()`
+ *       and `ukarch_ectx_align()` provide constraints needed for allocating
+ *       memory `struct ukarch_ectx`.
+ */
+struct ukarch_ectx;
+
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+/**
+ * Switch the current logical CPU to context `load`. The current context
+ * is stored to `store`. The standard register set is saved to `store`'s
+ * stack and will be restored when the context will be loaded again. Also loads
+ * the extended context pointed by `load_ectx`.
+ *
+ * @param store
+ *   Reference to context struct to save the current context to
+ * @param load
+ *   Reference to context that shall be executed
+ * @param load_ectx
+ *   Reference to extended context that shall be loaded
+ */
+void ukarch_ctx_switch(struct ukarch_ctx *store, struct ukarch_ctx *load,
+		       struct ukarch_ectx *load_ectx);
+
+#else
+/**
  * Switch the current logical CPU to context `load`. The current context
  * is stored to `store`. The standard register set is saved to `store`'s
  * stack and will be restored when the context will be loaded again.
@@ -184,15 +211,7 @@ void ukarch_ctx_init_entry2(struct ukarch_ctx *ctx,
  *   Reference to context that shall be executed
  */
 void ukarch_ctx_switch(struct ukarch_ctx *store, struct ukarch_ctx *load);
-
-/**
- * State of extended context, like additional CPU registers and units
- * (e.g., floating point, vector registers)
- * Note: The layout is architecture specific. The helpers `ukarch_ectx_size()`
- *       and `ukarch_ectx_align()` provide constraints needed for allocating
- *       memory `struct ukarch_ectx`.
- */
-struct ukarch_ectx;
+#endif
 
 /**
  * Size needed to allocate memory to store an extended context state

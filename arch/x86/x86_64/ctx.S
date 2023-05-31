@@ -27,6 +27,7 @@
  */
 /* Some parts are derived from Mini-OS arch/x86/x86_64.S */
 
+#include <uk/config.h>
 #include <uk/arch/ctx.h>
 
 #define ENTRY(X) .globl X ; X :
@@ -92,6 +93,16 @@ ENTRY(ukarch_ctx_switch)
 	pushq UKARCH_CTX_OFFSETOF_IP(%rsi)            /* restore EIP
 						       * (to stack and return)
 						       */
+#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+	/* Since we might be scheduling a new, unprivileged thread for the first
+	 * time, we need to restore the ectx (including the PKRU) at the very
+	 * last moment
+	 */
+	mov %rdx, %rbx
+	mov $0xffffffff, %eax
+	mov $0xffffffff, %edx
+	xrstor (%rbx)
+#endif
 	ret
 
 .Lresume:
