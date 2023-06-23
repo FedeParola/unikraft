@@ -333,6 +333,13 @@ int lcpu_fn_enqueue(struct lcpu *lcpu, const struct ukplat_lcpu_func *fn);
  * return the ID of the bootstrap processor without initialization of the MP
  * functions.
  */
+__lcpuid lcpu_arch_id_raw(void);
+
+/**
+ * Return the hardware ID of the CPU executing this function. It is only
+ * guaranteed to return a meaningful value after the CPU has been initialized,
+ * but can generally achieve better performance than the raw version.
+ */
 __lcpuid lcpu_arch_id(void);
 
 /**

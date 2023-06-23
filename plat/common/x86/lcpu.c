@@ -56,7 +56,32 @@
 
 #include "start16_helpers.h"
 
-__lcpuid lcpu_arch_id(void)
+enum x86_cpu_id_store {
+	X86_CPU_ID_STORE_NONE = 0,
+	X86_CPU_ID_STORE_RDTSCP,
+	X86_CPU_ID_STORE_RDPID
+};
+
+static enum x86_cpu_id_store cpu_id_store = X86_CPU_ID_STORE_NONE;
+
+static void init_cpu_id_store(void)
+{
+	__u32 eax, ebx, ecx, edx;
+
+	ukarch_x86_cpuid(7, 0, &eax, &ebx, &ecx, &edx);
+	if (ecx & X86_CPUID7_ECX_RDPID) {
+		uk_pr_debug("Store of CPU id: RDPID\n");
+		cpu_id_store = X86_CPU_ID_STORE_RDPID;
+	} else {
+		ukarch_x86_cpuid(0x80000001, 0, &eax, &ebx, &ecx, &edx);
+		if (edx & X86_CPUID81_RDTSCP) {
+			uk_pr_debug("Store of CPU id: RDTSCP\n");
+			cpu_id_store = X86_CPU_ID_STORE_RDTSCP;
+		}
+	}
+}
+
+__lcpuid lcpu_arch_id_raw(void)
 {
 	__u32 eax, ebx, ecx, edx;
 
@@ -64,8 +89,34 @@ __lcpuid lcpu_arch_id(void)
 	return (ebx >> 24);
 }
 
+__lcpuid lcpu_arch_id(void)
+{
+	switch (cpu_id_store) {
+	case X86_CPU_ID_STORE_RDPID: {
+		unsigned long pid;
+		asm volatile("rdpid %0" : "=r"(pid));
+		return pid;
+	}
+	case X86_CPU_ID_STORE_RDTSCP: {
+		__u32 pid;
+		asm volatile("rdtscp" : "=c"(pid));
+		return pid;
+	}
+	default:
+		return lcpu_arch_id_raw();
+	}
+}
+
 int lcpu_arch_init(struct lcpu *this_lcpu)
 {
+	init_cpu_id_store();
+
+	if (cpu_id_store == X86_CPU_ID_STORE_RDPID
+	    || cpu_id_store == X86_CPU_ID_STORE_RDTSCP) {
+		/* Store CPU id in msr for faster retrieval */
+		wrmsr(X86_MSR_TSC_AUX, this_lcpu->id, 0);
+	}
+
 #ifdef CONFIG_HAVE_SMP
 	int rc;
 
@@ -227,6 +278,12 @@ int lcpu_arch_mp_init(void *arg __unused)
 			 */
 			uk_pr_warn("Maximum number of cores exceeded.\n");
 			return 0;
+		}
+
+		if (cpu_id_store == X86_CPU_ID_STORE_RDPID
+		    || cpu_id_store == X86_CPU_ID_STORE_RDTSCP) {
+			/* Store CPU id in msr for faster retrieval */
+			wrmsr(X86_MSR_TSC_AUX, cpu_id, 0);
 		}
 	}
 	UK_ASSERT(bsp_found);
