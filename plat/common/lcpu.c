@@ -98,9 +98,14 @@ __u32 ukplat_lcpu_count(void)
 /* Provide weak default implementations for the case that the architecture does
  * not support multi-processor configurations.
  */
-__lcpuid __weak lcpu_arch_id(void)
+__lcpuid __weak lcpu_arch_id_raw(void)
 {
 	return 0;
+}
+
+__lcpuid __weak lcpu_arch_id(void)
+{
+	return lcpu_arch_id_raw();
 }
 
 int __weak lcpu_arch_init(struct lcpu *this_lcpu __unused)
@@ -137,7 +142,7 @@ int lcpu_init(struct lcpu *this_lcpu)
 			return -EPERM;
 
 		this_lcpu->idx   = 0;
-		this_lcpu->id    = lcpu_arch_id();
+		this_lcpu->id    = lcpu_arch_id_raw();
 		this_lcpu->state = LCPU_STATE_INIT;
 	} else {
 		/* We should already be in INIT state for secondary CPUs */

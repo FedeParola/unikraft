@@ -40,7 +40,7 @@
 
 #define CPU_ID_MASK 0xff00ffffffUL
 
-__lcpuid lcpu_arch_id(void)
+__lcpuid lcpu_arch_id_raw(void)
 {
 	__u64 mpidr_reg;
 
@@ -48,6 +48,11 @@ __lcpuid lcpu_arch_id(void)
 
 	/* return the affinity bits for the current core */
 	return mpidr_reg & CPU_ID_MASK;
+}
+
+__lcpuid lcpu_arch_id_raw(void)
+{
+	return lcpu_arch_id(void);
 }
 
 #ifdef CONFIG_HAVE_SMP
