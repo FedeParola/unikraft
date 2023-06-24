@@ -24,6 +24,9 @@
 
 #include <stdint.h>
 #include <x86/cpu.h>
+#ifdef CONFIG_HAVE_SMP
+#include <x86/apic.h>
+#endif
 #include <kvm/intctrl.h>
 
 #define PIC1             0x20    /* IO base address for master PIC */
@@ -92,6 +95,10 @@ void intctrl_ack_irq(unsigned int irq)
 		outb(PIC2_COMMAND, PIC_EOI);
 
 	outb(PIC1_COMMAND, PIC_EOI);
+
+#ifdef CONFIG_HAVE_SMP
+	apic_ack_interrupt();
+#endif
 }
 
 void intctrl_mask_irq(unsigned int irq)
