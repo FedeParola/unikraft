@@ -52,18 +52,18 @@
 	cmp $H2OS_PKRU_DEFAULT, %rax
 	je skip\id
 	/* Store interrupt return info for the current cpu */
-	mov $1, %eax
-	cpuid
-	shr $24, %ebx /* Id of the current cpu */
+	rdtscp /* Idx of the current cpu in rdx */
+	/* The size of each ret_info element is 24B */
+	lea (%rdx, %rdx, 2), %rdx /* Idx * 3 */
 	lea h2os_irq_ret_info(%rip), %rdi
 	/* Store privileged flag */
-	movb $1, 0x10(%rdi, %rbx, 1)
+	movb $1, 0x10(%rdi, %rdx, 8)
 	/* Store return rip */
 	mov 0x88(%rsp), %rax
-	mov %rax, 0x0(%rdi, %rbx, 1)
+	mov %rax, 0x0(%rdi, %rdx, 8)
 	/* Store return rsp */
 	mov 0xa0(%rsp), %rax
-	mov %rax, 0x8(%rdi, %rbx, 1)
+	mov %rax, 0x8(%rdi, %rdx, 8)
 	/* Set unprivileged PKRU */
 	xor %rdx, %rdx
 	xor %rcx, %rcx
@@ -77,11 +77,11 @@ skip\id:
 
 .macro H2OS_INTR_EXIT id
 	/* Did we interrupt privileged code? */
-	mov $1, %eax
-	cpuid
-	shr $24, %ebx /* Id of the current cpu */
+	rdtscp /* Idx of the current cpu in rdx */
+	/* The size of each ret_info element is 24B */
+	lea (%rdx, %rdx, 2), %rbx /* Idx * 3 */
 	lea h2os_irq_ret_info(%rip), %rdi
-	cmpb $1, 0x10(%rdi, %rbx, 1)
+	cmpb $1, 0x10(%rdi, %rbx, 8)
 	jne sskip\id
 	/* Restore privileged PKRU */
 	xor %rdx, %rdx
@@ -89,13 +89,13 @@ skip\id:
 	mov $H2OS_PKRU_PRIVILEGED, %rax
 	wrpkru
 	/* Reset flag for next interrupt */
-	movb $0, 0x10(%rdi, %rbx, 1)
+	movb $0, 0x10(%rdi, %rbx, 8)
 	/* Check return rip and rsp, this should also protect form ROP */
 	mov 0x88(%rsp), %rax /* rip */
-	cmp %rax, 0x0(%rdi, %rbx, 1)
+	cmp %rax, 0x0(%rdi, %rbx, 8)
 	jne err\id
 	mov 0xa0(%rsp), %rax /* rsp */
-	cmp %rax, 0x8(%rdi, %rbx, 1)
+	cmp %rax, 0x8(%rdi, %rbx, 8)
 	je sskip\id
 err\id:
 	int $0xd
