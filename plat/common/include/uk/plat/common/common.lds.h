@@ -162,7 +162,7 @@
 	 */								\
 	_tls_end = . + SIZEOF(.tbss);
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
 #define DATA_SECTIONS							\
 	/* Read-write data (initialized) */				\
 	. = ALIGN(__PAGE_SIZE);						\
@@ -173,9 +173,9 @@
 		*(.data.*)						\
 	} :data								\
 									\
-	.data_h2os ALIGN(__PAGE_SIZE) :					\
+	.data_unimsg ALIGN(__PAGE_SIZE) :				\
 	{								\
-		*(.data_h2os)						\
+		*(.data_unimsg)						\
 	}								\
 	_edata = .;							\
 									\
@@ -195,12 +195,12 @@
 		. = ALIGN(__PAGE_SIZE);					\
 	}								\
 									\
-	.bss_h2os ALIGN(__PAGE_SIZE) :					\
+	.bss_unimsg ALIGN(__PAGE_SIZE) :				\
 	{								\
-		*(.bss_h2os)						\
+		*(.bss_unimsg)						\
 	}
 
-#else /* !CONFIG_LIBH2OS_MEMORY_PROTECTION */
+#else /* !CONFIG_LIBUNIMSG_MEMORY_PROTECTION */
 #define DATA_SECTIONS							\
 	/* Read-write data (initialized) */				\
 	. = ALIGN(__PAGE_SIZE);						\
@@ -227,6 +227,6 @@
 		*(COMMON)						\
 		. = ALIGN(__PAGE_SIZE);					\
 	}
-#endif /* CONFIG_LIBH2OS_MEMORY_PROTECTION */
+#endif /* CONFIG_LIBUNIMSG_MEMORY_PROTECTION */
 
 #endif /* __UK_COMMON_LDS_H */

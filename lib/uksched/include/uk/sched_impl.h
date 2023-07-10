@@ -81,9 +81,9 @@ int uk_sched_register(struct uk_sched *s);
  */
 unsigned int uk_sched_thread_gc(struct uk_sched *sched);
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-#include <h2os/api.h>
-H2OS_API_DEFINE(uk_sched_thread_switch, struct uk_thread *, next);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+#include <unimsg/api.h>
+UNIMSG_API_DEFINE(uk_sched_thread_switch, struct uk_thread *, next);
 
 #else
 static inline
@@ -111,7 +111,7 @@ void uk_sched_thread_switch(struct uk_thread *next)
 
 	ukarch_ctx_switch(&prev->ctx, &next->ctx);
 }
-#endif /* CONFIG_LIBH2OS_MEMORY_PROTECTION */
+#endif /* CONFIG_LIBUNIMSG_MEMORY_PROTECTION */
 
 #ifdef __cplusplus
 }

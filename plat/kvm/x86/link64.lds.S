@@ -54,10 +54,10 @@ SECTIONS
 		*(.text.*)
 	} :text
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-	.text_h2os ALIGN(__PAGE_SIZE) :
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	.text_unimsg ALIGN(__PAGE_SIZE) :
 	{
-		*(.text_h2os)
+		*(.text_unimsg)
 	}
 #endif
 	_etext = .;
@@ -71,10 +71,10 @@ SECTIONS
 		*(.rodata.*)
 	} :rodata
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-	.rodata_h2os ALIGN(__PAGE_SIZE) :
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	.rodata_unimsg ALIGN(__PAGE_SIZE) :
 	{
-		*(.rodata_h2os)
+		*(.rodata_unimsg)
 	}
 #endif
 	_erodata = .;
@@ -109,15 +109,15 @@ SECTIONS
 
 	DATA_SECTIONS
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
 	. = ALIGN(__PAGE_SIZE);
-	_interrupt_h2os_start = .;
-	.interrupt_h2os :
+	_interrupt_unimsg_start = .;
+	.interrupt_unimsg :
 	{
-		*(.interrupt_h2os)
+		*(.interrupt_unimsg)
 	}
 	. = ALIGN(__PAGE_SIZE);
-	_interrupt_h2os_end = .;
+	_interrupt_unimsg_end = .;
 #endif
 
 	_end = .;

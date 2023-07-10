@@ -34,7 +34,7 @@
 #include <uk/config.h>
 #include <uk/arch/paging.h>
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
 /* TODO: for PKUs to work al PTEs in the hierarchy that leads to the page
  * resolution must be tagged as user pages. At the moment I'm tagging all pages
  * of the unikernel as user to simplify things. Is there a more granular way to
@@ -135,9 +135,9 @@
  * 0xffffff8000000000 - 0xffffffffffffffff Mapping of first 512GB (for PTs)
  */
 .align 0x1000
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
 /* We need to retain the fine grained memory mapping that was removed in commit
- * ad684b5 to be able to set MPK keys on h2os pages
+ * ad684b5 to be able to set MPK keys on unimsg pages
  */
 x86_bpt_pt0_0_0: /* 4K pages */
 	pte_zero 0x0000000000000000, 0x008

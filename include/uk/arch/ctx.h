@@ -182,7 +182,7 @@ void ukarch_ctx_init_entry2(struct ukarch_ctx *ctx,
  */
 struct ukarch_ectx;
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
 /**
  * Switch the current logical CPU to context `load`. The current context
  * is stored to `store`. The standard register set is saved to `store`'s

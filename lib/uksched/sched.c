@@ -41,9 +41,9 @@
 #include <uk/sched.h>
 #include <uk/syscall.h>
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-#include <h2os/api.h>
-H2OS_API_DEFINE(h2os_thread_register, struct uk_thread *, t)
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+#include <unimsg/api.h>
+UNIMSG_API_DEFINE(unimsg_thread_register, struct uk_thread *, t)
 #endif
 
 struct uk_sched *uk_sched_head;
@@ -221,8 +221,8 @@ int uk_sched_start(struct uk_sched *s)
 	 * context, it does not have IP and SP set. We have to manually mark
 	 * the thread as RUNNABLE.
 	 */
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-	ret = h2os_thread_register(main_thread);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	ret = unimsg_thread_register(main_thread);
 	if (ret)
 		goto err_unset_thread_current;
 #endif

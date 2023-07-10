@@ -93,7 +93,7 @@ ENTRY(ukarch_ctx_switch)
 	pushq UKARCH_CTX_OFFSETOF_IP(%rsi)            /* restore EIP
 						       * (to stack and return)
 						       */
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
 	/* Since we might be scheduling a new, unprivileged thread for the first
 	 * time, we need to restore the ectx (including the PKRU) at the very
 	 * last moment

@@ -27,35 +27,35 @@
 #include <x86/traps.h>
 #include <uk/asm/cfi.h>
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
 #define MPK_ACCESS_DISABLE 0x1
 #define MPK_WRITE_DISABLE  0x2
-#define H2OS_DEFAULT_KEY 0x0UL
-#define H2OS_WRITE_KEY 0x2UL
-#define H2OS_ACCESS_KEY 0x1UL
-#define H2OS_PKRU_DEFAULT						\
-	((MPK_ACCESS_DISABLE << (2 * H2OS_ACCESS_KEY))			\
-	 | (MPK_WRITE_DISABLE << (2 * H2OS_WRITE_KEY)))
-#define H2OS_PKRU_PRIVILEGED 0
+#define UNIMSG_DEFAULT_KEY 0x0UL
+#define UNIMSG_WRITE_KEY 0x2UL
+#define UNIMSG_ACCESS_KEY 0x1UL
+#define UNIMSG_PKRU_DEFAULT						\
+	((MPK_ACCESS_DISABLE << (2 * UNIMSG_ACCESS_KEY))		\
+	 | (MPK_WRITE_DISABLE << (2 * UNIMSG_WRITE_KEY)))
+#define UNIMSG_PKRU_PRIVILEGED 0
 
-.extern h2os_irq_ret_info
+.extern unimsg_irq_ret_info
 
 /* TODO: can all of this safely be moved to C code? E.g., in
  * _ukplat_irq_handle() for interrupts
  */
 
-.macro H2OS_INTR_ENTRY id
+.macro UNIMSG_INTR_ENTRY id
 	/* Did we interrupt privileged code? */
 	xor %rdx, %rdx
 	xor %rcx, %rcx
 	rdpkru
-	cmp $H2OS_PKRU_DEFAULT, %rax
+	cmp $UNIMSG_PKRU_DEFAULT, %rax
 	je skip\id
 	/* Store interrupt return info for the current cpu */
 	rdtscp /* Idx of the current cpu in rdx */
 	/* The size of each ret_info element is 24B */
 	lea (%rdx, %rdx, 2), %rdx /* Idx * 3 */
-	lea h2os_irq_ret_info(%rip), %rdi
+	lea unimsg_irq_ret_info(%rip), %rdi
 	/* Store privileged flag */
 	movb $1, 0x10(%rdi, %rdx, 8)
 	/* Store return rip */
@@ -67,26 +67,26 @@
 	/* Set unprivileged PKRU */
 	xor %rdx, %rdx
 	xor %rcx, %rcx
-	mov $H2OS_PKRU_DEFAULT, %rax
+	mov $UNIMSG_PKRU_DEFAULT, %rax
 	wrpkru
-	cmp $H2OS_PKRU_DEFAULT, %rax
+	cmp $UNIMSG_PKRU_DEFAULT, %rax
 	je skip\id
 	int $0xd /* ROP detected, crash */
 skip\id:
 .endm
 
-.macro H2OS_INTR_EXIT id
+.macro UNIMSG_INTR_EXIT id
 	/* Did we interrupt privileged code? */
 	rdtscp /* Idx of the current cpu in rdx */
 	/* The size of each ret_info element is 24B */
 	lea (%rdx, %rdx, 2), %rbx /* Idx * 3 */
-	lea h2os_irq_ret_info(%rip), %rdi
+	lea unimsg_irq_ret_info(%rip), %rdi
 	cmpb $1, 0x10(%rdi, %rbx, 8)
 	jne sskip\id
 	/* Restore privileged PKRU */
 	xor %rdx, %rdx
 	xor %rcx, %rcx
-	mov $H2OS_PKRU_PRIVILEGED, %rax
+	mov $UNIMSG_PKRU_PRIVILEGED, %rax
 	wrpkru
 	/* Reset flag for next interrupt */
 	movb $0, 0x10(%rdi, %rbx, 8)
@@ -176,16 +176,16 @@ ENTRY(ASM_TRAP_SYM(\trapname))
 	subq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
 	.cfi_adjust_cfa_offset __REGS_PAD_SIZE
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-	H2OS_INTR_ENTRY \trapname
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	UNIMSG_INTR_ENTRY \trapname
 #endif
 
 	movq %rsp, %rdi
 	movq __REGS_OFFSETOF_ORIG_RAX(%rsp), %rsi
 	call do_\trapname
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-	H2OS_INTR_EXIT \trapname
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	UNIMSG_INTR_EXIT \trapname
 #endif
 
 	addq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
@@ -225,16 +225,16 @@ ENTRY(cpu_irq_\irqno)
 	subq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
 	.cfi_adjust_cfa_offset __REGS_PAD_SIZE
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-	H2OS_INTR_ENTRY \irqno
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	UNIMSG_INTR_ENTRY \irqno
 #endif
 
 	movq %rsp, %rdi
 	movq $\irqno, %rsi
 	call _ukplat_irq_handle
 
-#ifdef CONFIG_LIBH2OS_MEMORY_PROTECTION
-	H2OS_INTR_EXIT \irqno
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	UNIMSG_INTR_EXIT \irqno
 #endif
 
 	addq $__REGS_PAD_SIZE, %rsp         /* we have some padding */
