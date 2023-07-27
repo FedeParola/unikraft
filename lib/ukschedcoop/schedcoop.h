@@ -16,6 +16,7 @@ struct schedcoop {
 	struct uk_thread idle;
 	__nsec idle_return_time;
 	__nsec ts_prev_switch;
+	__nsec halt_poll_deadline;
 };
 
 static inline struct schedcoop *uksched2schedcoop(struct uk_sched *s)
