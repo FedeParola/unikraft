@@ -26,8 +26,7 @@ struct ivshmem_doorbell {
 	/* Unique id of the device in a group of VMs sharing memory */
 	__u32 iv_position;
 	/* (vector & 0xffff) | ((peer_id & 0xffff) << 16) */
-	volatile __u32 doorbell;
-	char reserved[240];
+	volatile __u8 doorbells[244];
 } __attribute__((packed));
 
 struct ivshmem_dev {
@@ -116,7 +115,7 @@ int qemu_ivshmem_set_interrupt_handler(unsigned ivshmem_id, unsigned vector,
 }
 
 int qemu_ivshmem_interrupt_peer(unsigned ivshmem_id, __u16 peer_id,
-				__u16 vector) {
+				__u16 vector __maybe_unused) {
 	struct ivshmem_dev *dev = get_ivshmem(ivshmem_id);
 	if (!dev)
 		return -ENODEV;
@@ -124,7 +123,10 @@ int qemu_ivshmem_interrupt_peer(unsigned ivshmem_id, __u16 peer_id,
 	if (dev->type != QEMU_IVSHMEM_TYPE_DOORBELL)
 		return -EINVAL;
 
-	dev->doorbell->doorbell = vector | ((__u32)peer_id << 16);
+	if (peer_id >= 244)
+		return -EINVAL;
+
+	dev->doorbell->doorbells[peer_id] = 1;
 
 	return 0;
 }
