@@ -5,6 +5,7 @@
 #include <qemu_ivshmem.h>
 #include <uk/plat/lcpu.h>
 #ifdef CONFIG_HAVE_PAGING
+#include <uk/arch/paging.h>
 #include <uk/plat/paging.h>
 #endif
 #include "pci_helpers.h"
@@ -138,9 +139,10 @@ static int get_bar_vaddr(struct pci_bar_info bar, void **addr)
 #ifdef CONFIG_HAVE_PAGING
 	unsigned pages = bar.size == 0 ? 0 : (bar.size - 1) / PAGE_SIZE + 1;
 	int rc = ukplat_page_map(ukplat_pt_get_active(), next_bar_vaddr,
-				 bar.paddr, pages, PAGE_ATTR_PROT_RW, 0);
+				 bar.paddr, pages, PAGE_ATTR_PROT_RW,
+				 PAGE_FLAG_SIZE(0) | PAGE_FLAG_FORCE_SIZE);
 	*addr = (void *)next_bar_vaddr;
-	next_bar_vaddr += pages * PAGE_SIZE;
+	next_bar_vaddr += PAGE_Lx_ALIGN_UP(pages * PAGE_SIZE, PAGE_LARGE_LEVEL);
 	return rc;
 #else
 	*addr = (void *)bar.paddr;
