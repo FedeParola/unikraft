@@ -52,18 +52,18 @@
 	cmp $UNIMSG_PKRU_DEFAULT, %rax
 	je skip\id
 	/* Store interrupt return info for the current cpu */
-	rdtscp /* Idx of the current cpu in rdx */
+	rdtscp /* Idx of the current cpu in rcx */
 	/* The size of each ret_info element is 24B */
-	lea (%rdx, %rdx, 2), %rdx /* Idx * 3 */
+	lea (%rcx, %rcx, 2), %rcx /* Idx * 3 */
 	lea unimsg_irq_ret_info(%rip), %rdi
 	/* Store privileged flag */
-	movb $1, 0x10(%rdi, %rdx, 8)
+	movb $1, 0x10(%rdi, %rcx, 8)
 	/* Store return rip */
 	mov 0x88(%rsp), %rax
-	mov %rax, 0x0(%rdi, %rdx, 8)
+	mov %rax, 0x0(%rdi, %rcx, 8)
 	/* Store return rsp */
 	mov 0xa0(%rsp), %rax
-	mov %rax, 0x8(%rdi, %rdx, 8)
+	mov %rax, 0x8(%rdi, %rcx, 8)
 	/* Set unprivileged PKRU */
 	xor %rdx, %rdx
 	xor %rcx, %rcx
@@ -77,9 +77,9 @@ skip\id:
 
 .macro UNIMSG_INTR_EXIT id
 	/* Did we interrupt privileged code? */
-	rdtscp /* Idx of the current cpu in rdx */
+	rdtscp /* Idx of the current cpu in rcx */
 	/* The size of each ret_info element is 24B */
-	lea (%rdx, %rdx, 2), %rbx /* Idx * 3 */
+	lea (%rcx, %rcx, 2), %rbx /* Idx * 3 */
 	lea unimsg_irq_ret_info(%rip), %rdi
 	cmpb $1, 0x10(%rdi, %rbx, 8)
 	jne sskip\id
