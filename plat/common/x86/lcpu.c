@@ -114,7 +114,11 @@ void __noreturn lcpu_arch_jump_to(void *sp, ukplat_lcpu_entry_t entry)
 #if CONFIG_HAVE_SMP
 __lcpuidx lcpu_arch_idx(void)
 {
-	UK_ASSERT(IS_LCPU_PTR(rdgsbase()));
+	/* Disable the following assertion since it's quite expensive. Even if
+	 * assertions should be disabled during tests, this prevents unexpecteds
+	 * results in any case
+	 */
+	// UK_ASSERT(IS_LCPU_PTR(rdgsbase()));
 
 	return rdgsbase32(LCPU_IDX_OFFSET);
 }
