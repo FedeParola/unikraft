@@ -34,6 +34,11 @@ PHDRS
 	tls PT_TLS;
 	tls_load PT_LOAD;
 	stack PT_GNU_STACK FLAGS(PHDRS_PF_RW);
+#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
+	text_unimsg PT_LOAD FLAGS(PHDRS_PF_RX);
+	rodata_unimsg PT_LOAD FLAGS(PHDRS_PF_R);
+	data_unimsg PT_LOAD FLAGS(PHDRS_PF_RW);
+#endif
 }
 
 SECTIONS
@@ -56,12 +61,6 @@ SECTIONS
 		*(.text.*)
 	} :text
 
-#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
-	.text_unimsg ALIGN(__PAGE_SIZE) :
-	{
-		*(.text_unimsg)
-	}
-#endif
 	_etext = .;
 
 	/* Read-only data */
@@ -73,12 +72,6 @@ SECTIONS
 		*(.rodata.*)
 	} :rodata
 
-#ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
-	.rodata_unimsg ALIGN(__PAGE_SIZE) :
-	{
-		*(.rodata_unimsg)
-	}
-#endif
 	_erodata = .;
 
 	EXCEPTION_SECTIONS
@@ -113,13 +106,37 @@ SECTIONS
 
 #ifdef CONFIG_LIBUNIMSG_MEMORY_PROTECTION
 	. = ALIGN(__PAGE_SIZE);
-	_interrupt_unimsg_start = .;
+	_unimsg_access = .;
+
+	.text_unimsg :
+	{
+		*(.text_unimsg)
+	} :text_unimsg
+
+	.rodata_unimsg ALIGN(__PAGE_SIZE) :
+	{
+		*(.rodata_unimsg)
+	} :rodata_unimsg
+
+	.data_unimsg ALIGN(__PAGE_SIZE) :
+	{
+		*(.data_unimsg)
+	} :data_unimsg
+
+	.bss_unimsg :
+	{
+		*(.bss_unimsg)
+	}
+
+	. = ALIGN(__PAGE_SIZE);
+	_end_unimsg_access = .;
+	_unimsg_write = .;
 	.interrupt_unimsg :
 	{
 		*(.interrupt_unimsg)
 	}
 	. = ALIGN(__PAGE_SIZE);
-	_interrupt_unimsg_end = .;
+	_end_unimsg_write = .;
 #endif
 
 	_end = .;
